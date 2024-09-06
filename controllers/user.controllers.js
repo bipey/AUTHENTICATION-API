@@ -4,6 +4,8 @@ import  jwt  from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 import { mailer } from "../utils/mailer.utils.js";
 import crypto from "crypto"
+import { Subscription } from "../models/subscription.model.js";
+import { lookup } from "dns";
 
 //generate access and refresh token
 const generateAccessRefreshToken=async(userId)=>{
@@ -18,15 +20,21 @@ return {accessToken,refreshToken}
 
 //User Register operation
 const registerUser= async(req,res)=>{
-    const{email, fullName, password, confirmPassword}=req.body;
+    const{email,userName, fullName, password, confirmPassword}=req.body;
     
-    if((!email||!fullName||!password)===""){
+    if((!email||!fullName||!password||!userName)===""){
         return res.status(400).json("Field cant be empty")
     }
     const checkEmail=await User.findOne({email:email})
     if(checkEmail){
         console.log(checkEmail)
         return res.status(400).json("Email already exists")
+    }
+    
+    const checkUserName=await User.findOne({userName:userName})
+    if(checkUserName){
+        console.log(checkUserName)
+        return res.status(400).json("UserName already exists")
     }
     if(password.length<8){
         return res.status(400).json("Password should be of minimum 8 characters")
@@ -37,7 +45,8 @@ const registerUser= async(req,res)=>{
     const userData=await User.create({
         email:email.toLowerCase(),
         fullName,
-        password
+        password,
+        userName
     })
     if(!userData){
         return res.status(400).json("Something went wrong while sending data to database")
@@ -245,8 +254,64 @@ const forgetPassword= async(req, res)=>{
     });
 }
 };
-
-
-
+const getUserChannelProfile = async (req, res) => {
+    const { userName } = req.params;
+    console.log(req.loggedInUser.userName)
+    if (!userName?.trim()) {
+      return res.status(400).json("userName is missing");
+    }
+  
+    const channel = await User.aggregate([
+      { 
+        $match: { userName: userName.toLowerCase() }
+      },
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "channel",
+          as: "subscribers"
+        }
+      },
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "subscriber",
+          as: "channelsSubscribed"
+        }
+      },
+      {
+        $addFields: {
+          subscribersCount: { $size: "$subscribers" },
+          channelsSubscribedCount: { $size: "$channelsSubscribed" },
+          isSubscribed: {
+            $cond: {
+              if: { $in: [req.loggedInUser._id, "$subscribers.subscriber"] },
+              then: true,
+              else: false
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          fullName: 1,
+          userName: 1,
+          email: 1,
+          subscribersCount: 1,
+          isSubscribed: 1,
+          channelsSubscribedCount: 1
+        }
+      }
+    ]);
+    console.log(channel.length)
+  
+    if (!channel.length) {
+      return res.status(404).json("Channel doesn't exist");
+    }
+    return res.status(200).json({ data: channel[0], message: "User channel fetched successfully" });
+  };
+  
  //exporting the functions
-export {registerUser, userLogin, logoutUser, refreshAccessToken, changePassword, forgetPassword,generateOTP}
+export {registerUser, userLogin, logoutUser, refreshAccessToken, changePassword, forgetPassword,generateOTP, getUserChannelProfile}

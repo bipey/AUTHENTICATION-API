@@ -4,6 +4,11 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import'dotenv/config';
 const userSchema= new mongoose.Schema({
+    userName:{
+        type:String,
+        required:true,
+        unique:true
+    },
     fullName:{
         type:String,
         required:true

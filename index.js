@@ -17,9 +17,10 @@ const port=process.env.PORT||3000
 //     res.json("hello world")
 // })
 app.use("/user",userRouter);
-connctDb().then(()=>{
-   app.get("/",(req,res)=>{
+app.get("/",(req,res)=>{
     res.send("hello world")})
+connctDb().then(()=>{
+   
 app.listen(port,(req,res)=>{
     console.log("Server running at",port)
 

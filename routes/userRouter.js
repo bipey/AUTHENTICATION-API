@@ -2,6 +2,9 @@ import { Router } from "express";
 import { changePassword, forgetPassword, generateOTP, getUserChannelProfile, logoutUser, refreshAccessToken, registerUser, userLogin } from "../controllers/user.controllers.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 const router=new Router();
+router.route("/").get((req,res)=>{
+    res.send("hello world")
+})
 router.route("/register").post(registerUser)
 
 router.route("/login").post(userLogin)

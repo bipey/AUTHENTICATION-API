@@ -1,7 +1,7 @@
 import express from "express"
 import "dotenv/config"
-import { connctDb } from "./database/dab_connect.js"
-import userRouter from "./routes/userRouter.js"
+import { connctDb } from "../database/dab_connect.js"
+import userRouter from "../routes/userRouter.js"
 import cookieParser from "cookie-parser"
 import bodyParser from "body-parser"
 const app = express()

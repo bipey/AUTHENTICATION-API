@@ -55,6 +55,48 @@ const registerUser= async(req,res)=>{
     
 }
 
+//login with oauth
+const oauthRegister=async (req,res)=>{
+   try {
+     const user=req.user
+     const email=user.emails[0].value
+     const checkUser=await User.findOne({email:email})
+     const cookieOptions={
+        httpOnly:true,
+        secure:true
+     }
+     if(checkUser){
+        const {accessToken,refreshToken}=await generateAccessRefreshToken(checkUser._id)
+        console.log(checkUser._id)
+        console.log(refreshToken)
+        checkUser.refreshToken=refreshToken
+        await checkUser.save()
+         return res.status(200)
+         .cookie("AccessToken", accessToken, cookieOptions)
+        .cookie("RefreshToken", refreshToken, cookieOptions)
+         .json({message:"User already exists",user:checkUser})
+     }
+     const userName= email.split("@")[0]
+     const fullName=user.name.givenName+" "+user.name.familyName
+     const newUser=await User.create({
+         email,
+         userName,
+         fullName,
+         password:undefined
+         
+     })
+     const {accessToken, refreshToken}=await generateAccessRefreshToken(newUser._id)
+     newUser.refreshToken=refreshToken
+     newUser.save()
+     return res.status(201)
+     .cookie("AccessToken", accessToken, cookieOptions)
+     .cookie("RefreshToken", refreshToken, cookieOptions)
+     .json({message:'User registered succesfully', user:newUser})
+   } catch (error) {
+    return res.status(500).json({message:`error occured ${error.message}`})
+   }
+    
+}
 
 
 // login function
@@ -314,4 +356,4 @@ const getUserChannelProfile = async (req, res) => {
   };
   
  //exporting the functions
-export {registerUser, userLogin, logoutUser, refreshAccessToken, changePassword, forgetPassword,generateOTP, getUserChannelProfile}
+export {registerUser, userLogin, logoutUser, refreshAccessToken, changePassword, forgetPassword,generateOTP, getUserChannelProfile,oauthRegister}
